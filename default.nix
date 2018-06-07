@@ -125,7 +125,7 @@ let globalOverlay = self: super: {
         in nixpkgs.lib.mapAttrs (_: args: if args == null then null else nixpkgsFunc args) {
         simulator64 = {
           inherit system;
-          overlays = [globalOverlay];
+          overlays = [globalOverlay appleLibiconvHack];
           crossSystem = {
             useIosPrebuilt = true;
             # You can change config/arch/isiPhoneSimulator depending on your target:
@@ -145,7 +145,7 @@ let globalOverlay = self: super: {
         };
         arm64 = if system != "x86_64-darwin" then null else {
           inherit system;
-          overlays = [globalOverlay];
+          overlays = [globalOverlay appleLibiconvHack];
           crossSystem = {
             useIosPrebuilt = true;
             # You can change config/arch/isiPhoneSimulator depending on your target:
