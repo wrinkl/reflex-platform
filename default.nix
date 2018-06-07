@@ -9,8 +9,30 @@
 , useTextJSString ? true
 , iosSdkVersion ? "10.2"
 }:
-let nixpkgs = nixpkgsFunc ({
+let globalOverlay = self: super: {
+      all-cabal-hashes = super.all-cabal-hashes.override {
+        src-spec = {
+          owner = "commercialhaskell";
+          repo = "all-cabal-hashes";
+          rev = "2b0bf3ddf8b75656582c1e45c51caa59458cd3ad";
+          sha256 = "0g4nvvgfg9npd0alysd67ckhvx3s66q8b5x0x9am2myjrha3fjgq";
+        };
+      };
+    };
+    appleLibiconvHack = self: super: {
+      darwin = super.darwin // {
+        libiconv =
+          if self.hostPlatform == self.buildPlatform
+          then super.darwin.libiconv
+          else super.darwin.libiconv.overrideAttrs (o: {
+            postInstall = "rm $out/include/libcharset.h $out/include/localcharset.h";
+            configureFlags = ["--disable-shared" "--enable-static"];
+        });
+      };
+    };
+    nixpkgs = nixpkgsFunc ({
       inherit system;
+      overlays = [globalOverlay];
       config = {
         allowUnfree = true;
         allowBroken = true; # GHCJS is marked broken in 011c149ed5e5a336c3039f0b9d4303020cff1d86
@@ -29,6 +51,7 @@ let nixpkgs = nixpkgsFunc ({
       android = nixpkgs.lib.mapAttrs (_: args: if args == null then null else nixpkgsFunc args) rec {
         arm64 = if system != "x86_64-linux" then null else {
           inherit system;
+          overlays = [globalOverlay];
           crossSystem = {
             config = "aarch64-unknown-linux-android";
             arch = "arm64";
@@ -102,6 +125,7 @@ let nixpkgs = nixpkgsFunc ({
         in nixpkgs.lib.mapAttrs (_: args: if args == null then null else nixpkgsFunc args) {
         simulator64 = {
           inherit system;
+          overlays = [globalOverlay];
           crossSystem = {
             useIosPrebuilt = true;
             # You can change config/arch/isiPhoneSimulator depending on your target:
@@ -121,6 +145,7 @@ let nixpkgs = nixpkgsFunc ({
         };
         arm64 = if system != "x86_64-darwin" then null else {
           inherit system;
+          overlays = [globalOverlay];
           crossSystem = {
             useIosPrebuilt = true;
             # You can change config/arch/isiPhoneSimulator depending on your target:
